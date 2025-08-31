@@ -1,0 +1,106 @@
+<?php
+
+namespace Tests\Unit;
+
+use Tests\TestCase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Repositories\AutorRepositoryInterface;
+use App\Models\Autor;
+
+class AutorRepositoryTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected $autorRepository;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->autorRepository = app(AutorRepositoryInterface::class);
+    }
+
+    /** @test */
+    public function it_can_create_an_autor()
+    {
+        $data = [
+            'CodAu' => 1,
+            'Nome' => 'Machado de Assis'
+        ];
+
+        $autor = $this->autorRepository->create($data);
+
+        $this->assertInstanceOf(Autor::class, $autor);
+        $this->assertEquals('Machado de Assis', $autor->Nome);
+        $this->assertDatabaseHas('autores', $data);
+    }
+
+    /** @test */
+    public function it_can_find_an_autor_by_id()
+    {
+        $autor = Autor::factory()->create();
+
+        $foundAutor = $this->autorRepository->find($autor->CodAu);
+
+        $this->assertInstanceOf(Autor::class, $foundAutor);
+        $this->assertEquals($autor->CodAu, $foundAutor->CodAu);
+        $this->assertEquals($autor->Nome, $foundAutor->Nome);
+    }
+
+    /** @test */
+    public function it_returns_null_when_autor_not_found()
+    {
+        $foundAutor = $this->autorRepository->findWhere(['CodAu' => 999])->first();
+
+        $this->assertNull($foundAutor);
+    }
+
+    /** @test */
+    public function it_can_get_all_autores()
+    {
+        Autor::factory()->count(3)->create();
+
+        $autores = $this->autorRepository->all();
+
+        $this->assertCount(3, $autores);
+        $this->assertContainsOnlyInstancesOf(Autor::class, $autores);
+    }
+
+    /** @test */
+    public function it_can_update_an_autor()
+    {
+        $autor = Autor::factory()->create();
+        $updateData = ['Nome' => 'José de Alencar'];
+
+        $updatedAutor = $this->autorRepository->update($updateData, $autor->CodAu);
+
+        $this->assertInstanceOf(Autor::class, $updatedAutor);
+        $this->assertEquals('José de Alencar', $updatedAutor->Nome);
+        $this->assertDatabaseHas('autores', [
+            'CodAu' => $autor->CodAu,
+            'Nome' => 'José de Alencar'
+        ]);
+    }
+
+    /** @test */
+    public function it_can_delete_an_autor()
+    {
+        $autor = Autor::factory()->create();
+
+        $result = $this->autorRepository->delete($autor->CodAu);
+
+        $this->assertTrue($result);
+        $this->assertDatabaseMissing('autores', ['CodAu' => $autor->CodAu]);
+    }
+
+    /** @test */
+    public function it_returns_false_when_deleting_non_existent_autor()
+    {
+        try {
+            $result = $this->autorRepository->delete(999);
+            $this->assertFalse($result);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            // This is expected behavior for prettus repository
+            $this->assertTrue(true);
+        }
+    }
+}

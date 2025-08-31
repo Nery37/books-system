@@ -10,6 +10,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        DB::statement("DROP VIEW IF EXISTS vw_relatorio_livros");
+        
         DB::statement("
             CREATE VIEW vw_relatorio_livros AS
             SELECT 
@@ -27,12 +29,10 @@ return new class extends Migration
             INNER JOIN autores a ON la.Autor_CodAu = a.CodAu
             LEFT JOIN livro_assunto las ON l.Codl = las.Livro_Codl
             LEFT JOIN assuntos ass ON las.Assunto_codAs = ass.codAs
-            GROUP BY l.Codl, l.Titulo, l.Editora, l.Edicao, l.AnoPublicacao, l.Valor, a.CodAu, a.Nome
+            GROUP BY l.Codl, l.Titulo, l.Editora, l.Edicao, l.AnoPublicacao, l.Valor, a.CodAu, a.Nome   
             ORDER BY a.Nome, l.Titulo
         ");
-    }
-
-    /**
+    }    /**
      * Reverse the migrations.
      */
     public function down(): void

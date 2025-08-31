@@ -1,0 +1,380 @@
+<?php
+
+namespace Tests\Feature;
+
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
+use Tests\TestCase;
+use App\Models\Livro;
+use App\Models\Autor;
+use App\Models\Assunto;
+
+class LivroApiTest extends TestCase
+{
+    use RefreshDatabase, WithFaker;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Use database transactions for faster tests
+    }
+
+    /** @test */
+    public function it_can_list_all_livros()
+    {
+        // Arrange
+        $autor = Autor::factory()->create();
+        $assunto = Assunto::factory()->create();
+        $livro = Livro::factory()->create();
+        $livro->autores()->attach($autor->CodAu);
+        $livro->assuntos()->attach($assunto->CodAs);
+
+        // Act
+        $response = $this->getJson('/api/v1/livros');
+
+        // Assert
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'success',
+                    'data' => [
+                        '*' => [
+                            'Codl',
+                            'Titulo',
+                            'Editora',
+                            'Edicao',
+                            'AnoPublicacao',
+                            'Valor',
+                            'autores',
+                            'assuntos'
+                        ]
+                    ]
+                ]);
+        
+        $this->assertTrue($response->json('success'));
+        $this->assertCount(1, $response->json('data'));
+    }
+
+    /** @test */
+    public function it_can_create_a_new_livro()
+    {
+        // Arrange
+        $autor = Autor::factory()->create();
+        $assunto = Assunto::factory()->create();
+        
+        $livroData = [
+            'Codl' => 1,
+            'Titulo' => 'Dom Casmurro',
+            'Editora' => 'Ática',
+            'Edicao' => 1,
+            'AnoPublicacao' => '1899',
+            'Valor' => 29.90,
+            'autores' => [$autor->CodAu],
+            'assuntos' => [$assunto->CodAs]
+        ];
+
+        // Act
+        $response = $this->postJson('/api/v1/livros', $livroData);
+
+        // Assert
+        $response->assertStatus(201)
+                ->assertJsonStructure([
+                    'success',
+                    'message',
+                    'data' => [
+                        'Codl',
+                        'Titulo',
+                        'Editora',
+                        'Edicao',
+                        'AnoPublicacao',
+                        'Valor',
+                        'autores',
+                        'assuntos'
+                    ]
+                ]);
+
+        $this->assertTrue($response->json('success'));
+        $this->assertDatabaseHas('livros', [
+            'Codl' => 1,
+            'Titulo' => 'Dom Casmurro'
+        ]);
+        $this->assertDatabaseHas('livro_autor', [
+            'Livro_Codl' => 1,
+            'Autor_CodAu' => $autor->CodAu
+        ]);
+        $this->assertDatabaseHas('livro_assunto', [
+            'Livro_Codl' => 1,
+            'Assunto_CodAs' => $assunto->CodAs
+        ]);
+    }
+
+    /** @test */
+    public function it_can_show_a_specific_livro()
+    {
+        // Arrange
+        $autor = Autor::factory()->create();
+        $assunto = Assunto::factory()->create();
+        $livro = Livro::factory()->create();
+        $livro->autores()->attach($autor->CodAu);
+        $livro->assuntos()->attach($assunto->CodAs);
+
+        // Act
+        $response = $this->getJson("/api/v1/livros/{$livro->Codl}");
+
+        // Assert
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'success',
+                    'data' => [
+                        'Codl',
+                        'Titulo',
+                        'Editora',
+                        'Edicao',
+                        'AnoPublicacao',
+                        'Valor',
+                        'autores',
+                        'assuntos'
+                    ]
+                ]);
+
+        $this->assertTrue($response->json('success'));
+        $this->assertEquals($livro->Codl, $response->json('data.Codl'));
+    }
+
+    /** @test */
+    public function it_can_update_a_livro()
+    {
+        // Arrange
+        $autor1 = Autor::factory()->create();
+        $autor2 = Autor::factory()->create();
+        $assunto1 = Assunto::factory()->create();
+        $assunto2 = Assunto::factory()->create();
+        
+        $livro = Livro::factory()->create();
+        $livro->autores()->attach($autor1->CodAu);
+        $livro->assuntos()->attach($assunto1->CodAs);
+
+        $updateData = [
+            'Titulo' => 'O Cortiço',
+            'Editora' => 'Saraiva',
+            'Edicao' => 2,
+            'AnoPublicacao' => '1890',
+            'Valor' => 35.50,
+            'autores' => [$autor2->CodAu],
+            'assuntos' => [$assunto2->CodAs]
+        ];
+
+        // Act
+        $response = $this->putJson("/api/v1/livros/{$livro->Codl}", $updateData);
+
+        // Assert
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'success',
+                    'message',
+                    'data' => [
+                        'Codl',
+                        'Titulo',
+                        'Editora',
+                        'Edicao',
+                        'AnoPublicacao',
+                        'Valor',
+                        'autores',
+                        'assuntos'
+                    ]
+                ]);
+
+        $this->assertTrue($response->json('success'));
+        $this->assertEquals('O Cortiço', $response->json('data.Titulo'));
+        $this->assertDatabaseHas('livros', [
+            'Codl' => $livro->Codl,
+            'Titulo' => 'O Cortiço'
+        ]);
+    }
+
+    /** @test */
+    public function it_can_delete_a_livro()
+    {
+        // Arrange
+        $livro = Livro::factory()->create();
+
+        // Act
+        $response = $this->deleteJson("/api/v1/livros/{$livro->Codl}");
+
+        // Assert
+        $response->assertStatus(200)
+                ->assertJsonStructure([
+                    'success',
+                    'message'
+                ]);
+
+        $this->assertTrue($response->json('success'));
+        $this->assertDatabaseMissing('livros', ['Codl' => $livro->Codl]);
+    }
+
+    /** @test */
+    public function it_validates_required_fields_when_creating_livro()
+    {
+        // Act
+        $response = $this->postJson('/api/v1/livros', []);
+
+        // Assert
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors([
+                    'Codl', 'Titulo', 'Editora', 'Edicao', 
+                    'AnoPublicacao', 'Valor', 'autores', 'assuntos'
+                ]);
+    }
+
+    /** @test */
+    public function it_validates_unique_codl_when_creating_livro()
+    {
+        // Arrange
+        $existingLivro = Livro::factory()->create(['Codl' => 1]);
+        $autor = Autor::factory()->create();
+        $assunto = Assunto::factory()->create();
+        
+        // Act
+        $response = $this->postJson('/api/v1/livros', [
+            'Codl' => 1,
+            'Titulo' => 'Outro Livro',
+            'Editora' => 'Editora',
+            'Edicao' => 1,
+            'AnoPublicacao' => '2023',
+            'Valor' => 20.00,
+            'autores' => [$autor->CodAu],
+            'assuntos' => [$assunto->CodAs]
+        ]);
+
+        // Assert
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['Codl']);
+    }
+
+    /** @test */
+    public function it_returns_404_when_livro_not_found()
+    {
+        // Act
+        $response = $this->getJson('/api/v1/livros/999');
+
+        // Assert
+        $response->assertStatus(404);
+    }
+
+    /** @test */
+    public function it_validates_titulo_max_length()
+    {
+        // Arrange
+        $autor = Autor::factory()->create();
+        $assunto = Assunto::factory()->create();
+
+        // Act
+        $response = $this->postJson('/api/v1/livros', [
+            'Codl' => 1,
+            'Titulo' => str_repeat('a', 41), // More than 40 characters
+            'Editora' => 'Editora',
+            'Edicao' => 1,
+            'AnoPublicacao' => '2023',
+            'Valor' => 20.00,
+            'autores' => [$autor->CodAu],
+            'assuntos' => [$assunto->CodAs]
+        ]);
+
+        // Assert
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['Titulo']);
+    }
+
+    /** @test */
+    public function it_validates_editora_max_length()
+    {
+        // Arrange
+        $autor = Autor::factory()->create();
+        $assunto = Assunto::factory()->create();
+
+        // Act
+        $response = $this->postJson('/api/v1/livros', [
+            'Codl' => 1,
+            'Titulo' => 'Título',
+            'Editora' => str_repeat('a', 41), // More than 40 characters
+            'Edicao' => 1,
+            'AnoPublicacao' => '2023',
+            'Valor' => 20.00,
+            'autores' => [$autor->CodAu],
+            'assuntos' => [$assunto->CodAs]
+        ]);
+
+        // Assert
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['Editora']);
+    }
+
+    /** @test */
+    public function it_validates_valor_is_numeric()
+    {
+        // Arrange
+        $autor = Autor::factory()->create();
+        $assunto = Assunto::factory()->create();
+
+        // Act
+        $response = $this->postJson('/api/v1/livros', [
+            'Codl' => 1,
+            'Titulo' => 'Título',
+            'Editora' => 'Editora',
+            'Edicao' => 1,
+            'AnoPublicacao' => '2023',
+            'Valor' => 'not_a_number',
+            'autores' => [$autor->CodAu],
+            'assuntos' => [$assunto->CodAs]
+        ]);
+
+        // Assert
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['Valor']);
+    }
+
+    /** @test */
+    public function it_validates_autores_exist()
+    {
+        // Arrange
+        $assunto = Assunto::factory()->create();
+
+        // Act
+        $response = $this->postJson('/api/v1/livros', [
+            'Codl' => 1,
+            'Titulo' => 'Título',
+            'Editora' => 'Editora',
+            'Edicao' => 1,
+            'AnoPublicacao' => '2023',
+            'Valor' => 20.00,
+            'autores' => [999], // Non-existent author
+            'assuntos' => [$assunto->CodAs]
+        ]);
+
+        // Assert
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['autores.0']);
+    }
+
+    /** @test */
+    public function it_validates_assuntos_exist()
+    {
+        // Arrange
+        $autor = Autor::factory()->create();
+
+        // Act
+        $response = $this->postJson('/api/v1/livros', [
+            'Codl' => 1,
+            'Titulo' => 'Título',
+            'Editora' => 'Editora',
+            'Edicao' => 1,
+            'AnoPublicacao' => '2023',
+            'Valor' => 20.00,
+            'autores' => [$autor->CodAu],
+            'assuntos' => [999] // Non-existent subject
+        ]);
+
+        // Assert
+        $response->assertStatus(422)
+                ->assertJsonValidationErrors(['assuntos.0']);
+    }
+}

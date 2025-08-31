@@ -1,0 +1,187 @@
+<?php
+
+namespace Tests\Feature;
+
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+use App\Models\Autor;
+use App\Models\Assunto;
+use App\Models\Livro;
+
+class IntegrationApiTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Use database transactions for faster tests
+    }
+
+    /** @test */
+    public function it_can_perform_complete_crud_operations_workflow()
+    {
+        // 1. Create an Autor
+        $autorData = [
+            'CodAu' => 1,
+            'Nome' => 'Machado de Assis'
+        ];
+        $autorResponse = $this->postJson('/api/v1/autores', $autorData);
+        $autorResponse->assertStatus(201);
+
+        // 2. Create an Assunto
+        $assuntoData = [
+            'CodAs' => 1,
+            'Descricao' => 'Literatura Brasileira'
+        ];
+        $assuntoResponse = $this->postJson('/api/v1/assuntos', $assuntoData);
+        $assuntoResponse->assertStatus(201);
+
+        // 3. Create a Livro with the Author and Subject
+        $livroData = [
+            'Codl' => 1,
+            'Titulo' => 'Dom Casmurro',
+            'Editora' => 'Ática',
+            'Edicao' => 1,
+            'AnoPublicacao' => '1899',
+            'Valor' => 29.90,
+            'autores' => [1],
+            'assuntos' => [1]
+        ];
+        $livroResponse = $this->postJson('/api/v1/livros', $livroData);
+        $livroResponse->assertStatus(201);
+
+        // 4. Verify all entities were created correctly
+        $this->assertDatabaseHas('autores', $autorData);
+        $this->assertDatabaseHas('assuntos', $assuntoData);
+        $this->assertDatabaseHas('livros', [
+            'Codl' => 1,
+            'Titulo' => 'Dom Casmurro'
+        ]);
+        $this->assertDatabaseHas('livro_autor', [
+            'Livro_Codl' => 1,
+            'Autor_CodAu' => 1
+        ]);
+        $this->assertDatabaseHas('livro_assunto', [
+            'Livro_Codl' => 1,
+            'Assunto_CodAs' => 1
+        ]);
+
+        // 5. Test listing all entities
+        $autoresListResponse = $this->getJson('/api/v1/autores');
+        $autoresListResponse->assertStatus(200);
+        $this->assertCount(1, $autoresListResponse->json('data'));
+
+        $assuntosListResponse = $this->getJson('/api/v1/assuntos');
+        $assuntosListResponse->assertStatus(200);
+        $this->assertCount(1, $assuntosListResponse->json('data'));
+
+        $livrosListResponse = $this->getJson('/api/v1/livros');
+        $livrosListResponse->assertStatus(200);
+        $this->assertCount(1, $livrosListResponse->json('data'));
+
+        // 6. Test updating entities
+        $autorUpdateResponse = $this->putJson('/api/v1/autores/1', [
+            'Nome' => 'Machado de Assis (Updated)'
+        ]);
+        $autorUpdateResponse->assertStatus(200);
+
+        $assuntoUpdateResponse = $this->putJson('/api/v1/assuntos/1', [
+            'Descricao' => 'Literatura Clássica'
+        ]);
+        $assuntoUpdateResponse->assertStatus(200);
+
+        $livroUpdateResponse = $this->putJson('/api/v1/livros/1', [
+            'Titulo' => 'Dom Casmurro (Edição Especial)',
+            'Editora' => 'Ática',
+            'Edicao' => 2,
+            'AnoPublicacao' => '1899',
+            'Valor' => 35.90,
+            'autores' => [1],
+            'assuntos' => [1]
+        ]);
+        $livroUpdateResponse->assertStatus(200);
+
+        // 7. Verify updates
+        $this->assertDatabaseHas('autores', [
+            'CodAu' => 1,
+            'Nome' => 'Machado de Assis (Updated)'
+        ]);
+        $this->assertDatabaseHas('assuntos', [
+            'CodAs' => 1,
+            'Descricao' => 'Literatura Clássica'
+        ]);
+        $this->assertDatabaseHas('livros', [
+            'Codl' => 1,
+            'Titulo' => 'Dom Casmurro (Edição Especial)'
+        ]);
+
+        // 8. Test individual entity retrieval
+        $autorShowResponse = $this->getJson('/api/v1/autores/1');
+        $autorShowResponse->assertStatus(200);
+        $this->assertEquals('Machado de Assis (Updated)', $autorShowResponse->json('data.Nome'));
+
+        $assuntoShowResponse = $this->getJson('/api/v1/assuntos/1');
+        $assuntoShowResponse->assertStatus(200);
+        $this->assertEquals('Literatura Clássica', $assuntoShowResponse->json('data.Descricao'));
+
+        $livroShowResponse = $this->getJson('/api/v1/livros/1');
+        $livroShowResponse->assertStatus(200);
+        $this->assertEquals('Dom Casmurro (Edição Especial)', $livroShowResponse->json('data.Titulo'));
+
+        // 9. Test deletion (in reverse order to respect foreign keys)
+        $livroDeleteResponse = $this->deleteJson('/api/v1/livros/1');
+        $livroDeleteResponse->assertStatus(200);
+
+        $autorDeleteResponse = $this->deleteJson('/api/v1/autores/1');
+        $autorDeleteResponse->assertStatus(200);
+
+        $assuntoDeleteResponse = $this->deleteJson('/api/v1/assuntos/1');
+        $assuntoDeleteResponse->assertStatus(200);
+
+        // 10. Verify deletions
+        $this->assertDatabaseMissing('livros', ['Codl' => 1]);
+        $this->assertDatabaseMissing('autores', ['CodAu' => 1]);
+        $this->assertDatabaseMissing('assuntos', ['CodAs' => 1]);
+        $this->assertDatabaseMissing('livro_autor', [
+            'Livro_Codl' => 1,
+            'Autor_CodAu' => 1
+        ]);
+        $this->assertDatabaseMissing('livro_assunto', [
+            'Livro_Codl' => 1,
+            'Assunto_CodAs' => 1
+        ]);
+    }
+
+    /** @test */
+    public function it_handles_api_errors_gracefully()
+    {
+        // Test 404 errors
+        $this->getJson('/api/v1/autores/999')->assertStatus(404);
+        $this->getJson('/api/v1/assuntos/999')->assertStatus(404);
+        $this->getJson('/api/v1/livros/999')->assertStatus(404);
+
+        // Test validation errors
+        $this->postJson('/api/v1/autores', [])->assertStatus(422);
+        $this->postJson('/api/v1/assuntos', [])->assertStatus(422);
+        $this->postJson('/api/v1/livros', [])->assertStatus(422);
+
+        // Test updating non-existent resources
+        $this->putJson('/api/v1/autores/999', ['Nome' => 'Test'])->assertStatus(404);
+        $this->putJson('/api/v1/assuntos/999', ['Descricao' => 'Test'])->assertStatus(404);
+        $this->putJson('/api/v1/livros/999', [
+            'Titulo' => 'Test',
+            'Editora' => 'Test',
+            'Edicao' => 1,
+            'AnoPublicacao' => '2023',
+            'Valor' => 20.00,
+            'autores' => [],
+            'assuntos' => []
+        ])->assertStatus(404);
+
+        // Test deleting non-existent resources
+        $this->deleteJson('/api/v1/autores/999')->assertStatus(404);
+        $this->deleteJson('/api/v1/assuntos/999')->assertStatus(404);
+        $this->deleteJson('/api/v1/livros/999')->assertStatus(404);
+    }
+}
