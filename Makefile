@@ -1,7 +1,14 @@
 .PHONY: install up down build migrate seed fresh test clean logs
 
 # Comando principal para instalação completa
-install: build up composer-install migrate seed test
+
+# Cria o banco de dados de testes, se não existir
+create-test-db:
+	@echo "====> Criando banco de dados de testes (livros_test_db) se necessario..."
+	docker-compose exec db mysql -u root -proot -e "CREATE DATABASE IF NOT EXISTS livros_test_db;"
+
+# Comando principal para instalação completa
+install: build up composer-install create-test-db migrate seed test
 	@echo "====> Sistema instalado com sucesso!"
 	@echo "API disponivel em: http://localhost:8000"
 	@echo "phpMyAdmin disponivel em: http://localhost:8080"
