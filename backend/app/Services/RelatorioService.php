@@ -17,14 +17,20 @@ class RelatorioService
             ->groupBy('autor_nome');
     }
 
-    public function getRelatorioLivrosPorAutorFormatado()
+    public function getRelatorioLivrosPorAutorFormatado($autorId = null)
     {
         // Buscar todos os livros únicos primeiro
-        $livros = DB::table('livros')
+        $query = DB::table('livros')
             ->join('livro_autor', 'livros.Codl', '=', 'livro_autor.Livro_Codl')
             ->join('autores', 'livro_autor.Autor_CodAu', '=', 'autores.CodAu')
-            ->select('livros.*', 'autores.Nome as autor_nome')
-            ->orderBy('autores.Nome')
+            ->select('livros.*', 'autores.Nome as autor_nome', 'autores.CodAu as autor_id');
+            
+        // Filtrar por autor específico se fornecido
+        if ($autorId) {
+            $query->where('autores.CodAu', $autorId);
+        }
+            
+        $livros = $query->orderBy('autores.Nome')
             ->orderBy('livros.Titulo')
             ->get();
         
@@ -39,6 +45,7 @@ class RelatorioService
             
             $resultado[] = [
                 'autor' => $autorNome,
+                'autor_id' => $livrosUnicos->first()->autor_id,
                 'total_livros' => $livrosUnicos->count(),
                 'livros' => $livrosUnicos->map(function($livro) {
                     return [
@@ -55,9 +62,9 @@ class RelatorioService
         return collect($resultado);
     }
 
-    public function getEstatisticasRelatorio()
+    public function getEstatisticasRelatorio($autorId = null)
     {
-        $relatorio = $this->getRelatorioLivrosPorAutorFormatado();
+        $relatorio = $this->getRelatorioLivrosPorAutorFormatado($autorId);
         
         // Para calcular o total geral correto, precisamos contar cada livro apenas uma vez
         $todosOsLivros = collect();

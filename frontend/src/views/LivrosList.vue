@@ -188,7 +188,7 @@ export default {
           include: 'autores,assuntos',
           page: pagina,
           orderBy: 'Codl',
-          sortedBy: 'asc'
+          sortedBy: 'desc'
         }
         
         if (this.filtros.titulo) {

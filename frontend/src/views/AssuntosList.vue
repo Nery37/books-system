@@ -128,7 +128,7 @@ export default {
       filtros: {
         search: '',
         orderBy: 'codAs',
-        sortedBy: 'asc'
+        sortedBy: 'desc'
       }
     }
   },

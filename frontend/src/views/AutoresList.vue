@@ -128,7 +128,7 @@ export default {
       filtros: {
         search: '',
         orderBy: 'CodAu',
-        sortedBy: 'asc'
+        sortedBy: 'desc'
       }
     }
   },

@@ -24,7 +24,16 @@
                 </div>
                 <div class="col-md-3 mb-3">
                   <label for="anoPublicacao" class="form-label">Ano *</label>
-                  <input type="number" id="anoPublicacao" v-model="form.anoPublicacao" class="form-control" required>
+                  <input 
+                    type="number" 
+                    id="anoPublicacao" 
+                    v-model="form.anoPublicacao" 
+                    class="form-control" 
+                    required 
+                    min="1000" 
+                    max="9999"
+                    @input="limitarAno"
+                  >
                 </div>
               </div>
               
@@ -308,6 +317,14 @@ export default {
     
     limparAssuntos() {
       this.form.assuntos = []
+    },
+
+    // Método para limitar ano a 4 dígitos
+    limitarAno(event) {
+      let valor = event.target.value
+      if (valor.length > 4) {
+        this.form.anoPublicacao = parseInt(valor.toString().slice(0, 4))
+      }
     }
   }
 }

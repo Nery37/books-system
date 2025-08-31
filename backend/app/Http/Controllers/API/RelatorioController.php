@@ -40,15 +40,18 @@ class RelatorioController extends Controller
     }
 
     /**
-     * Reorna relatóro dtie livros por autor
+     * Retorna relatório de livros por autor
      */
     public function livrosPorAutor(Request $request): JsonResponse
     {
         try {
-            $livrosPorAutor = $this->relatorioService->getRelatorioLivrosPorAutorFormatado();
-
-            // Aplicar filtro se fornecido
+            // Obter filtros da requisição
+            $autorId = $request->get('autor_id');
             $autorNome = $request->get('autor_nome');
+            
+            $livrosPorAutor = $this->relatorioService->getRelatorioLivrosPorAutorFormatado($autorId);
+
+            // Aplicar filtro por nome se fornecido
             if ($autorNome) {
                 $livrosPorAutor = $livrosPorAutor->filter(function ($autorData) use ($autorNome) {
                     return stripos($autorData['autor'], $autorNome) !== false;
@@ -58,7 +61,7 @@ class RelatorioController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $livrosPorAutor->values(),
-                'meta' => $this->relatorioService->getEstatisticasRelatorio(),
+                'meta' => $this->relatorioService->getEstatisticasRelatorio($autorId),
                 'message' => 'Relatório de livros por autor recuperado com sucesso.'
             ]);
         } catch (\Exception $e) {

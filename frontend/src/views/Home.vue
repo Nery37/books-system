@@ -173,11 +173,11 @@ export default {
           api.autores.getAll(),
           api.assuntos.getAll()
         ])
-        
+
         this.estatisticas = {
-          totalLivros: (livrosResponse.data.data.data || []).length,
-          totalAutores: (autoresResponse.data.data.data || []).length,
-          totalAssuntos: (assuntosResponse.data.data.data || []).length
+          totalLivros: livrosResponse.data.data.meta.pagination.total,
+          totalAutores: autoresResponse.data.data.meta.pagination.total,
+          totalAssuntos: assuntosResponse.data.data.meta.pagination.total
         }
         
         // Pegar os 5 primeiros livros como "recentes"
