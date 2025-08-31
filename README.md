@@ -109,7 +109,7 @@ vw_relatorio_livros
 - **Node.js** 16+ e **npm**
 - **Git**
 
-### 1. Clone e Instale
+### 1. Clone e Instale **(Copie o arquivo de configuração de exemplo .env.example para .env antes de iniciar a instalação.)**
 ```bash
 git clone https://github.com/Nery37/books-system.git
 cd books-system
