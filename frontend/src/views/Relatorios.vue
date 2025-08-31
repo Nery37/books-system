@@ -76,7 +76,7 @@
             </thead>
             <tbody>
               <tr v-for="item in relatorioData" :key="item.autor_id">
-                <td>{{ item.autor_nome }}</td>
+                <td>{{ item.autor }}</td>
                 <td>{{ item.total_livros }}</td>
                 <td>
                   <ul class="list-unstyled mb-0">
