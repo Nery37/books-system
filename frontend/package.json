@@ -1,0 +1,46 @@
+{
+  "name": "livros-frontend",
+  "version": "1.0.0",
+  "description": "Frontend Vue 2 para Sistema de Gestão de Livros",
+  "main": "src/main.js",
+  "scripts": {
+    "serve": "webpack serve --mode development",
+    "build": "webpack --mode production",
+    "dev": "webpack serve --mode development --open",
+    "start": "npm run serve"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "bootstrap": "^5.3.3",
+    "bootstrap-vue": "^2.23.1",
+    "jspdf": "^3.0.2",
+    "jspdf-autotable": "^5.0.2",
+    "v-mask": "^2.3.0",
+    "v-money": "^0.8.1",
+    "vue": "^2.7.16",
+    "vue-router": "^3.6.5",
+    "vue-template-compiler": "^2.7.16"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.3",
+    "@babel/preset-env": "^7.28.3",
+    "babel-loader": "^10.0.0",
+    "css-loader": "^7.1.2",
+    "file-loader": "^6.2.0",
+    "html-webpack-plugin": "^5.6.0",
+    "style-loader": "^4.0.0",
+    "url-loader": "^4.1.1",
+    "vue-loader": "^15.11.1",
+    "webpack": "^5.94.0",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.0.4"
+  },
+  "keywords": [
+    "vue",
+    "livros",
+    "gestao",
+    "biblioteca"
+  ],
+  "author": "",
+  "license": "MIT"
+}
