@@ -7,50 +7,6 @@
       </router-link>
     </div>
 
-    <!-- Filtros de Busca -->
-    <div class="card mb-4">
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-6">
-            <label for="searchDescricao" class="form-label">Buscar por Descrição:</label>
-            <input 
-              id="searchDescricao"
-              v-model="filtros.search" 
-              @input="buscarAssuntos"
-              type="text" 
-              class="form-control" 
-              placeholder="Digite a descrição do assunto..."
-            >
-          </div>
-          <div class="col-md-3">
-            <label for="orderBy" class="form-label">Ordenar por:</label>
-            <select 
-              id="orderBy"
-              v-model="filtros.orderBy" 
-              @change="buscarAssuntos"
-              class="form-select"
-            >
-              <option value="">Selecione</option>
-              <option value="Descricao">Descrição</option>
-              <option value="CodAs">ID</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label for="sortedBy" class="form-label">Direção:</label>
-            <select 
-              id="sortedBy"
-              v-model="filtros.sortedBy" 
-              @change="buscarAssuntos"
-              class="form-select"
-            >
-              <option value="asc">Crescente</option>
-              <option value="desc">Decrescente</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Loading -->
     <div v-if="loading" class="text-center my-4">
       <div class="spinner-border" role="status">
@@ -171,7 +127,7 @@ export default {
       },
       filtros: {
         search: '',
-        orderBy: '',
+        orderBy: 'codAs',
         sortedBy: 'asc'
       }
     }
@@ -234,7 +190,11 @@ export default {
         
       } catch (error) {
         console.error('Erro ao carregar assuntos:', error)
-        alert('Erro ao carregar assuntos')
+        this.$swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          text: 'Não foi possível carregar a lista de assuntos.'
+        })
       } finally {
         this.loading = false
       }
@@ -250,8 +210,19 @@ export default {
       }
     },
     
-    confirmarExclusao(assunto) {
-      if (confirm(`Tem certeza que deseja excluir o assunto: ${assunto.descricao}?`)) {
+    async confirmarExclusao(assunto) {
+      const result = await this.$swal.fire({
+        title: 'Confirmar exclusão',
+        text: `Tem certeza que deseja excluir o assunto: ${assunto.descricao}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sim, excluir!',
+        cancelButtonText: 'Cancelar'
+      })
+      
+      if (result.isConfirmed) {
         this.excluirAssunto(assunto)
       }
     },
@@ -259,12 +230,34 @@ export default {
     async excluirAssunto(assunto) {
       try {
         await api.assuntos.delete(assunto.id)
-        alert('Assunto excluído com sucesso!')
+        this.$swal.fire({
+          icon: 'success',
+          title: 'Sucesso!',
+          text: 'Assunto excluído com sucesso!',
+          timer: 2000,
+          showConfirmButton: false
+        })
         await this.carregarAssuntos()
         
       } catch (error) {
         console.error('Erro ao excluir assunto:', error)
-        alert('Erro ao excluir assunto')
+        
+        let errorMessage = 'Não foi possível excluir o assunto.'
+        
+        // Se há erros específicos
+        if (error.response?.data?.errors) {
+          const errors = error.response.data.errors
+          const errorList = Object.values(errors).flat()
+          errorMessage = errorList.join('<br>')
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message
+        }
+        
+        this.$swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          html: errorMessage
+        })
       }
     }
   }

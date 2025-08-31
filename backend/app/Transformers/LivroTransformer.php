@@ -19,7 +19,7 @@ class LivroTransformer extends TransformerAbstract
             'titulo' => $livro->Titulo,
             'editora' => $livro->Editora,
             'edicao' => $livro->Edicao,
-            'ano_publicacao' => $livro->AnoPublicacao,
+            'anoPublicacao' => $livro->AnoPublicacao,
             'valor' => $livro->Valor,
             'valor_formatado' => 'R$ ' . number_format($livro->Valor, 2, ',', '.'),
             'created_at' => $livro->created_at,

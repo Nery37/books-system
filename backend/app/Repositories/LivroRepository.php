@@ -67,4 +67,57 @@ class LivroRepository extends BaseRepository implements LivroRepositoryInterface
 
         return $query;
     }
+
+    public function create(array $attributes)
+    {
+        // Separar os dados do livro dos relacionamentos
+        $autores = $attributes['autores'] ?? [];
+        $assuntos = $attributes['assuntos'] ?? [];
+        
+        // Remover autores e assuntos dos atributos principais
+        unset($attributes['autores'], $attributes['assuntos']);
+        
+        // Criar o livro
+        $livro = parent::create($attributes);
+        
+        // Sincronizar relacionamentos
+        if (!empty($autores)) {
+            $livro->autores()->sync($autores);
+        }
+        
+        if (!empty($assuntos)) {
+            $livro->assuntos()->sync($assuntos);
+        }
+        
+        // Recarregar o livro com os relacionamentos
+        return $livro->load(['autores', 'assuntos']);
+    }
+
+    public function update(array $attributes, $id)
+    {
+        // Separar os dados do livro dos relacionamentos
+        $autores = $attributes['autores'] ?? [];
+        $assuntos = $attributes['assuntos'] ?? [];
+        
+        // Remover autores e assuntos dos atributos principais
+        unset($attributes['autores'], $attributes['assuntos']);
+        
+        // Atualizar o livro
+        $livro = parent::update($attributes, $id);
+        
+        // Buscar o livro atualizado
+        $livroModel = $this->find($id);
+        
+        // Sincronizar relacionamentos
+        if (!empty($autores)) {
+            $livroModel->autores()->sync($autores);
+        }
+        
+        if (!empty($assuntos)) {
+            $livroModel->assuntos()->sync($assuntos);
+        }
+        
+        // Recarregar o livro com os relacionamentos
+        return $livroModel->load(['autores', 'assuntos']);
+    }
 }

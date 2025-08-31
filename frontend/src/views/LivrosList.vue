@@ -7,42 +7,7 @@
       </router-link>
     </div>
 
-    <!-- Filtros -->
-    <div class="card mb-4">
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-4">
-            <label for="filtroTitulo" class="form-label">Buscar por Título:</label>
-            <input 
-              type="text" 
-              id="filtroTitulo" 
-              v-model="filtros.titulo" 
-              class="form-control" 
-              placeholder="Digite o título do livro"
-              @input="aplicarFiltros"
-            >
-          </div>
-          <div class="col-md-4">
-            <label for="filtroAutor" class="form-label">Filtrar por Autor:</label>
-            <select v-model="filtros.autor" class="form-select" @change="aplicarFiltros">
-              <option value="">Todos os autores</option>
-              <option v-for="autor in autores" :key="autor.id" :value="autor.id">
-                {{ autor.nome }}
-              </option>
-            </select>
-          </div>
-          <div class="col-md-4">
-            <label for="filtroAssunto" class="form-label">Filtrar por Assunto:</label>
-            <select v-model="filtros.assunto" class="form-select" @change="aplicarFiltros">
-              <option value="">Todos os assuntos</option>
-              <option v-for="assunto in assuntos" :key="assunto.id" :value="assunto.id">
-                {{ assunto.descricao }}
-              </option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
+
 
     <!-- Loading -->
     <div v-if="loading" class="text-center my-4">
@@ -207,7 +172,11 @@ export default {
         
       } catch (error) {
         console.error('Erro ao carregar dados:', error)
-        alert('Erro ao carregar dados')
+        this.$swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          text: 'Não foi possível carregar os dados iniciais.'
+        })
       } finally {
         this.loading = false
       }
@@ -217,7 +186,9 @@ export default {
       try {
         const params = {
           include: 'autores,assuntos',
-          page: pagina
+          page: pagina,
+          orderBy: 'Codl',
+          sortedBy: 'asc'
         }
         
         if (this.filtros.titulo) {
@@ -249,13 +220,28 @@ export default {
         
       } catch (error) {
         console.error('Erro ao buscar livros:', error)
-        alert('Erro ao buscar livros')
+        this.$swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          text: 'Não foi possível buscar os livros.'
+        })
         this.livros = []
       }
     },
     
-    confirmarExclusao(livro) {
-      if (confirm(`Tem certeza que deseja excluir o livro: ${livro.titulo}?`)) {
+    async confirmarExclusao(livro) {
+      const result = await this.$swal.fire({
+        title: 'Confirmar exclusão',
+        text: `Tem certeza que deseja excluir o livro: ${livro.titulo}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sim, excluir!',
+        cancelButtonText: 'Cancelar'
+      })
+      
+      if (result.isConfirmed) {
         this.excluirLivro(livro)
       }
     },
@@ -263,12 +249,34 @@ export default {
     async excluirLivro(livro) {
       try {
         await api.livros.delete(livro.id)
-        alert('Livro excluído com sucesso!')
+        this.$swal.fire({
+          icon: 'success',
+          title: 'Sucesso!',
+          text: 'Livro excluído com sucesso!',
+          timer: 2000,
+          showConfirmButton: false
+        })
         await this.buscarLivros()
         
       } catch (error) {
         console.error('Erro ao excluir livro:', error)
-        alert('Erro ao excluir livro')
+        
+        let errorMessage = 'Não foi possível excluir o livro.'
+        
+        // Se há erros específicos
+        if (error.response?.data?.errors) {
+          const errors = error.response.data.errors
+          const errorList = Object.values(errors).flat()
+          errorMessage = errorList.join('<br>')
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message
+        }
+        
+        this.$swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          html: errorMessage
+        })
       }
     },
     

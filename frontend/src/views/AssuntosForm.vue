@@ -70,7 +70,11 @@ export default {
         
       } catch (error) {
         console.error('Erro ao carregar assunto:', error)
-        alert('Erro ao carregar assunto')
+        this.$swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          text: 'Não foi possível carregar os dados do assunto.'
+        })
         this.$router.push('/assuntos')
       }
     },
@@ -79,19 +83,52 @@ export default {
       try {
         this.loading = true
         
+        // Converter o formato para o que o backend espera
+        const dados = {
+          Descricao: this.form.descricao
+        }
+        
         if (this.isEditing) {
-          await api.assuntos.update(this.$route.params.id, this.form)
-          alert('Assunto atualizado com sucesso!')
+          await api.assuntos.update(this.$route.params.id, dados)
+          this.$swal.fire({
+            icon: 'success',
+            title: 'Sucesso!',
+            text: 'Assunto atualizado com sucesso!',
+            timer: 2000,
+            showConfirmButton: false
+          })
         } else {
-          await api.assuntos.create(this.form)
-          alert('Assunto criado com sucesso!')
+          await api.assuntos.create(dados)
+          this.$swal.fire({
+            icon: 'success',
+            title: 'Sucesso!',
+            text: 'Assunto criado com sucesso!',
+            timer: 2000,
+            showConfirmButton: false
+          })
         }
         
         this.$router.push('/assuntos')
         
       } catch (error) {
         console.error('Erro ao salvar assunto:', error)
-        alert('Erro ao salvar assunto')
+        
+        let errorMessage = 'Não foi possível salvar o assunto.'
+        
+        // Se há erros de validação específicos
+        if (error.response?.data?.errors) {
+          const errors = error.response.data.errors
+          const errorList = Object.values(errors).flat()
+          errorMessage = errorList.join('<br>')
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message
+        }
+        
+        this.$swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          html: errorMessage
+        })
       } finally {
         this.loading = false
       }

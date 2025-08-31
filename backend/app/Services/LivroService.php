@@ -44,7 +44,7 @@ class LivroService
         }
         
         // Ordenação
-        $orderBy = $filters['orderBy'] ?? 'titulo';
+        $orderBy = $filters['orderBy'] ?? 'Codl';
         $sortedBy = $filters['sortedBy'] ?? 'asc';
         
         return $query->orderBy($orderBy, $sortedBy)->paginate(15);

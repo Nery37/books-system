@@ -17,14 +17,88 @@ class RelatorioService
             ->groupBy('autor_nome');
     }
 
+    public function getRelatorioLivrosPorAutorFormatado()
+    {
+        // Buscar todos os livros únicos primeiro
+        $livros = DB::table('livros')
+            ->join('livro_autor', 'livros.Codl', '=', 'livro_autor.Livro_Codl')
+            ->join('autores', 'livro_autor.Autor_CodAu', '=', 'autores.CodAu')
+            ->select('livros.*', 'autores.Nome as autor_nome')
+            ->orderBy('autores.Nome')
+            ->orderBy('livros.Titulo')
+            ->get();
+        
+        // Agrupar por autor
+        $livrosPorAutor = $livros->groupBy('autor_nome');
+        $resultado = [];
+        
+        foreach ($livrosPorAutor as $autorNome => $livrosDoAutor) {
+            $livrosUnicos = $livrosDoAutor->unique('Codl'); // Remove duplicatas por ID do livro
+            
+            $valorTotal = $livrosUnicos->sum('Valor');
+            
+            $resultado[] = [
+                'autor' => $autorNome,
+                'total_livros' => $livrosUnicos->count(),
+                'livros' => $livrosUnicos->map(function($livro) {
+                    return [
+                        'titulo' => $livro->Titulo,
+                        'valor' => $livro->Valor,
+                        'valor_formatado' => 'R$ ' . number_format($livro->Valor, 2, ',', '.')
+                    ];
+                })->values()->toArray(),
+                'valor_total' => $valorTotal,
+                'valor_total_formatado' => 'R$ ' . number_format($valorTotal, 2, ',', '.')
+            ];
+        }
+        
+        return collect($resultado);
+    }
+
+    public function getEstatisticasRelatorio()
+    {
+        $relatorio = $this->getRelatorioLivrosPorAutorFormatado();
+        
+        // Para calcular o total geral correto, precisamos contar cada livro apenas uma vez
+        $todosOsLivros = collect();
+        foreach ($relatorio as $autorData) {
+            foreach ($autorData['livros'] as $livro) {
+                $key = $livro['titulo'] . '|' . $livro['valor'];
+                if (!$todosOsLivros->contains('key', $key)) {
+                    $todosOsLivros->push([
+                        'key' => $key,
+                        'valor' => $livro['valor']
+                    ]);
+                }
+            }
+        }
+        
+        return [
+            'total_autores' => $relatorio->count(),
+            'total_livros' => $todosOsLivros->count(),
+            'valor_total' => $todosOsLivros->sum('valor')
+        ];
+    }
+
     public function gerarRelatorioPDF()
     {
         $livrosPorAutor = $this->getRelatorioLivrosPorAutor();
         
         // Calcular estatísticas para o relatório
         $totalAutores = $livrosPorAutor->count();
-        $totalLivros = $livrosPorAutor->flatten()->count();
-        $valorTotal = $livrosPorAutor->flatten()->sum('livro_valor');
+        
+        // Para evitar duplicação, vamos coletar apenas livros únicos
+        $livrosUnicos = collect();
+        foreach ($livrosPorAutor as $autorLivros) {
+            foreach ($autorLivros as $livro) {
+                if (!$livrosUnicos->contains('livro_id', $livro->livro_id)) {
+                    $livrosUnicos->push($livro);
+                }
+            }
+        }
+        
+        $totalLivros = $livrosUnicos->count();
+        $valorTotal = $livrosUnicos->sum('livro_valor');
         $dataGeracao = now()->format('d/m/Y H:i:s');
         
         // Verificar se há filtro de autor específico
@@ -62,7 +136,7 @@ class RelatorioService
             'ano_mais_recente' => DB::table('livros')->max('AnoPublicacao'),
             'ano_mais_antigo' => DB::table('livros')->min('AnoPublicacao'),
             'livros_por_autor' => DB::table('vw_relatorio_livros')
-                ->select('autor_nome', DB::raw('COUNT(*) as total_livros'))
+                ->select('autor_nome', DB::raw('COUNT(DISTINCT livro_id) as total_livros'))
                 ->groupBy('autor_nome')
                 ->orderBy('total_livros', 'desc')
                 ->limit(10)

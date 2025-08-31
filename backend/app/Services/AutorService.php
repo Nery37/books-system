@@ -15,7 +15,10 @@ class AutorService
 
     public function getAll(array $filters = [])
     {
-        return $this->autorRepository->with(['livros'])->paginate();
+        $orderBy = $filters['orderBy'] ?? 'CodAu';
+        $sortedBy = $filters['sortedBy'] ?? 'asc';
+        
+        return $this->autorRepository->with(['livros'])->orderBy($orderBy, $sortedBy)->paginate();
     }
 
     public function getById(int $id)

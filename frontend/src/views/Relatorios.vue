@@ -234,7 +234,14 @@ export default {
           
           const relatorioResponse = await api.relatorios.livrosPorAutor(params)
           this.relatorioData = relatorioResponse.data.data || []
-          this.calcularTotais()
+          
+          // Usar dados do meta se disponível (dados corrigidos)
+          if (relatorioResponse.data.meta) {
+            this.totais.totalLivros = relatorioResponse.data.meta.total_livros
+            this.totais.totalGeral = relatorioResponse.data.meta.valor_total
+          } else {
+            this.calcularTotais()
+          }
           
         } catch (error) {
           console.log('Endpoint de relatórios não disponível, gerando manualmente...')

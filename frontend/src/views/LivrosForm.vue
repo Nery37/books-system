@@ -35,30 +35,81 @@
                   <input 
                     type="text" 
                     id="valor" 
-                    v-model="form.valorFormatado" 
-                    v-mask="'###.###.###,##'" 
+                    v-model="form.valor" 
+                    v-money="moneyConfig"
                     class="form-control" 
                     placeholder="0,00"
                     required
-                    @input="atualizarValor"
                   >
                 </div>
               </div>
               
               <div class="row">
                 <div class="col-md-6 mb-3">
-                  <label for="autores" class="form-label">Autores *</label>
-                  <select multiple id="autores" v-model="form.autores" class="form-select" size="5" required>
-                    <option v-for="autor in autores" :key="autor.id" :value="autor.id">{{ autor.nome }}</option>
-                  </select>
-                  <div class="form-text">Segure Ctrl para selecionar múltiplos autores</div>
+                  <label class="form-label">Autores *</label>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-muted">Selecione os autores do livro</small>
+                    <div>
+                      <button type="button" class="btn btn-sm btn-outline-primary me-1" @click="selecionarTodosAutores">
+                        Todos
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-secondary" @click="limparAutores">
+                        Limpar
+                      </button>
+                    </div>
+                  </div>
+                  <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                    <div v-if="autores.length === 0" class="text-muted">Carregando autores...</div>
+                    <div v-for="autor in autores" :key="autor.id" class="form-check mb-2">
+                      <input 
+                        class="form-check-input" 
+                        type="checkbox" 
+                        :id="'autor-' + autor.id"
+                        :value="autor.id" 
+                        v-model="form.autores"
+                      >
+                      <label class="form-check-label" :for="'autor-' + autor.id">
+                        {{ autor.nome }}
+                      </label>
+                    </div>
+                  </div>
+                  <div class="form-text">
+                    <i class="bi bi-info-circle"></i> 
+                    Selecionados: {{ form.autores.length }} autor(es)
+                  </div>
                 </div>
                 <div class="col-md-6 mb-3">
-                  <label for="assuntos" class="form-label">Assuntos *</label>
-                  <select multiple id="assuntos" v-model="form.assuntos" class="form-select" size="5" required>
-                    <option v-for="assunto in assuntos" :key="assunto.id" :value="assunto.id">{{ assunto.descricao }}</option>
-                  </select>
-                  <div class="form-text">Segure Ctrl para selecionar múltiplos assuntos</div>
+                  <label class="form-label">Assuntos *</label>
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <small class="text-muted">Selecione os assuntos do livro</small>
+                    <div>
+                      <button type="button" class="btn btn-sm btn-outline-primary me-1" @click="selecionarTodosAssuntos">
+                        Todos
+                      </button>
+                      <button type="button" class="btn btn-sm btn-outline-secondary" @click="limparAssuntos">
+                        Limpar
+                      </button>
+                    </div>
+                  </div>
+                  <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                    <div v-if="assuntos.length === 0" class="text-muted">Carregando assuntos...</div>
+                    <div v-for="assunto in assuntos" :key="assunto.id" class="form-check mb-2">
+                      <input 
+                        class="form-check-input" 
+                        type="checkbox" 
+                        :id="'assunto-' + assunto.id"
+                        :value="assunto.id" 
+                        v-model="form.assuntos"
+                      >
+                      <label class="form-check-label" :for="'assunto-' + assunto.id">
+                        {{ assunto.descricao }}
+                      </label>
+                    </div>
+                  </div>
+                  <div class="form-text">
+                    <i class="bi bi-info-circle"></i> 
+                    Selecionados: {{ form.assuntos.length }} assunto(s)
+                  </div>
                 </div>
               </div>
               
@@ -89,14 +140,21 @@ export default {
         edicao: 1,
         anoPublicacao: new Date().getFullYear(),
         valor: 0,
-        valorFormatado: '',
         autores: [],
         assuntos: []
       },
       autores: [],
       assuntos: [],
       loading: false,
-      isEditing: false
+      isEditing: false,
+      moneyConfig: {
+        decimal: ',',
+        thousands: '.',
+        prefix: '',
+        suffix: '',
+        precision: 2,
+        masked: false
+      }
     }
   },
   async mounted() {
@@ -110,81 +168,146 @@ export default {
     async carregarDados() {
       try {
         const [autoresResponse, assuntosResponse] = await Promise.all([
-          api.autores.getAll(),
-          api.assuntos.getAll()
+          api.autores.getAll({ orderBy: 'CodAu', sortedBy: 'asc' }),
+          api.assuntos.getAll({ orderBy: 'codAs', sortedBy: 'asc' })
         ])
         this.autores = autoresResponse.data.data.data
         this.assuntos = assuntosResponse.data.data.data
       } catch (error) {
         console.error('Erro ao carregar dados:', error)
-        alert('Erro ao carregar dados')
+        this.$swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          text: 'Não foi possível carregar autores e assuntos.'
+        })
       }
     },
     async carregarLivro() {
       try {
         const response = await api.livros.getById(this.$route.params.id, 'autores,assuntos')
-        const livro = response.data.data
+        const livro = response.data.data.data
         
-        this.form = {
+        Object.assign(this.form, {
           titulo: livro.titulo,
           editora: livro.editora,
           edicao: livro.edicao,
-          anoPublicacao: livro.ano_publicacao,
-          valor: parseFloat(livro.valor),
-          valorFormatado: this.formatarValorParaInput(livro.valor),
-          autores: livro.autores && livro.autores.data ? livro.autores.data.map(autor => autor.id) : [],
-          assuntos: livro.assuntos && livro.assuntos.data ? livro.assuntos.data.map(assunto => assunto.id) : []
-        }
+          anoPublicacao: livro.anoPublicacao,
+          valor: livro.valor,
+          autores: livro.autores?.data?.map(autor => parseInt(autor.id)) || [],
+          assuntos: livro.assuntos?.data?.map(assunto => parseInt(assunto.id)) || []
+        })
+        
       } catch (error) {
         console.error('Erro ao carregar livro:', error)
-        alert('Erro ao carregar livro')
+        this.$swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          text: 'Não foi possível carregar os dados do livro.'
+        })
         this.$router.push('/livros')
       }
     },
     async salvarLivro() {
       try {
-        this.loading = true
-        const data = { 
-          ...this.form, 
-          valor: this.form.valor,
-          ano_publicacao: this.form.anoPublicacao
+        // Validações customizadas
+        if (this.form.autores.length === 0) {
+          this.$swal.fire({
+            icon: 'warning',
+            title: 'Atenção!',
+            text: 'Selecione pelo menos um autor'
+          })
+          return
         }
         
-        // Remover campos que não são do backend
-        delete data.valorFormatado
-        delete data.anoPublicacao
+        if (this.form.assuntos.length === 0) {
+          this.$swal.fire({
+            icon: 'warning',
+            title: 'Atenção!',
+            text: 'Selecione pelo menos um assunto'
+          })
+          return
+        }
+        
+        this.loading = true
+        
+        // Converter valor formatado para número
+        let valorNumerico = this.form.valor
+        if (typeof valorNumerico === 'string') {
+          valorNumerico = parseFloat(valorNumerico.replace(/\./g, '').replace(',', '.')) || 0
+        }
+        
+        const data = { 
+          Titulo: this.form.titulo,
+          Editora: this.form.editora,
+          Edicao: this.form.edicao,
+          AnoPublicacao: this.form.anoPublicacao.toString(),
+          Valor: valorNumerico,
+          autores: this.form.autores,
+          assuntos: this.form.assuntos
+        }
+        
+        console.log('Dados a serem enviados:', data)
         
         if (this.isEditing) {
           await api.livros.update(this.$route.params.id, data)
-          alert('Livro atualizado com sucesso!')
+          this.$swal.fire({
+            icon: 'success',
+            title: 'Sucesso!',
+            text: 'Livro atualizado com sucesso!',
+            timer: 2000,
+            showConfirmButton: false
+          })
         } else {
           await api.livros.create(data)
-          alert('Livro criado com sucesso!')
+          this.$swal.fire({
+            icon: 'success',
+            title: 'Sucesso!',
+            text: 'Livro criado com sucesso!',
+            timer: 2000,
+            showConfirmButton: false
+          })
         }
         this.$router.push('/livros')
       } catch (error) {
         console.error('Erro ao salvar livro:', error)
-        alert('Erro ao salvar livro')
+        console.error('Detalhes do erro:', error.response?.data)
+        
+        let errorMessage = 'Não foi possível salvar o livro.'
+        
+        // Se há erros de validação específicos
+        if (error.response?.data?.errors) {
+          const errors = error.response.data.errors
+          const errorList = Object.values(errors).flat()
+          errorMessage = errorList.join('<br>')
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message
+        }
+        
+        this.$swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          html: errorMessage
+        })
       } finally {
         this.loading = false
       }
     },
     
-    atualizarValor() {
-      // Converter valor formatado para número
-      if (this.form.valorFormatado) {
-        const valor = this.form.valorFormatado.replace(/[^\d,]/g, '').replace(',', '.')
-        this.form.valor = parseFloat(valor) || 0
-      } else {
-        this.form.valor = 0
-      }
+    // Métodos auxiliares para seleção
+    selecionarTodosAutores() {
+      this.form.autores = this.autores.map(autor => autor.id)
     },
     
-    formatarValorParaInput(valor) {
-      return parseFloat(valor).toLocaleString('pt-BR', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })
+    limparAutores() {
+      this.form.autores = []
+    },
+    
+    selecionarTodosAssuntos() {
+      this.form.assuntos = this.assuntos.map(assunto => assunto.id)
+    },
+    
+    limparAssuntos() {
+      this.form.assuntos = []
     }
   }
 }

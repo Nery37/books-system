@@ -45,19 +45,20 @@ class RelatorioController extends Controller
     public function livrosPorAutor(Request $request): JsonResponse
     {
         try {
-            $livrosPorAutor = $this->relatorioService->getRelatorioLivrosPorAutor();
+            $livrosPorAutor = $this->relatorioService->getRelatorioLivrosPorAutorFormatado();
 
             // Aplicar filtro se fornecido
             $autorNome = $request->get('autor_nome');
             if ($autorNome) {
-                $livrosPorAutor = $livrosPorAutor->filter(function ($livros, $nomeAutor) use ($autorNome) {
-                    return stripos($nomeAutor, $autorNome) !== false;
+                $livrosPorAutor = $livrosPorAutor->filter(function ($autorData) use ($autorNome) {
+                    return stripos($autorData['autor'], $autorNome) !== false;
                 });
             }
 
             return response()->json([
                 'success' => true,
-                'data' => $livrosPorAutor,
+                'data' => $livrosPorAutor->values(),
+                'meta' => $this->relatorioService->getEstatisticasRelatorio(),
                 'message' => 'Relatório de livros por autor recuperado com sucesso.'
             ]);
         } catch (\Exception $e) {

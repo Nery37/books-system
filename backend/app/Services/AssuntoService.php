@@ -14,7 +14,10 @@ class AssuntoService
 
     public function getAll(array $filters = [])
     {
-        return $this->assuntoRepository->with(['livros'])->paginate();
+        $orderBy = $filters['orderBy'] ?? 'codAs';
+        $sortedBy = $filters['sortedBy'] ?? 'asc';
+        
+        return $this->assuntoRepository->with(['livros'])->orderBy($orderBy, $sortedBy)->paginate();
     }
 
     public function getById(int $id)

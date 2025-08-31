@@ -11,7 +11,7 @@ class Livro extends Model
 
     protected $table = 'livros';
     protected $primaryKey = 'Codl';
-    public $incrementing = false;
+    public $incrementing = true;
     protected $keyType = 'int';
 
     protected $fillable = [

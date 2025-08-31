@@ -7,50 +7,6 @@
       </router-link>
     </div>
 
-    <!-- Filtros de Busca -->
-    <div class="card mb-4">
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-6">
-            <label for="searchNome" class="form-label">Buscar por Nome:</label>
-            <input 
-              id="searchNome"
-              v-model="filtros.search" 
-              @input="buscarAutores"
-              type="text" 
-              class="form-control" 
-              placeholder="Digite o nome do autor..."
-            >
-          </div>
-          <div class="col-md-3">
-            <label for="orderBy" class="form-label">Ordenar por:</label>
-            <select 
-              id="orderBy"
-              v-model="filtros.orderBy" 
-              @change="buscarAutores"
-              class="form-select"
-            >
-              <option value="">Selecione</option>
-              <option value="Nome">Nome</option>
-              <option value="CodAu">ID</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label for="sortedBy" class="form-label">Direção:</label>
-            <select 
-              id="sortedBy"
-              v-model="filtros.sortedBy" 
-              @change="buscarAutores"
-              class="form-select"
-            >
-              <option value="asc">Crescente</option>
-              <option value="desc">Decrescente</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Loading -->
     <div v-if="loading" class="text-center my-4">
       <div class="spinner-border" role="status">
@@ -171,7 +127,7 @@ export default {
       },
       filtros: {
         search: '',
-        orderBy: '',
+        orderBy: 'CodAu',
         sortedBy: 'asc'
       }
     }
@@ -234,7 +190,11 @@ export default {
         
       } catch (error) {
         console.error('Erro ao carregar autores:', error)
-        alert('Erro ao carregar autores')
+        this.$swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          text: 'Não foi possível carregar a lista de autores.'
+        })
       } finally {
         this.loading = false
       }
@@ -250,8 +210,19 @@ export default {
       }
     },
     
-    confirmarExclusao(autor) {
-      if (confirm(`Tem certeza que deseja excluir o autor: ${autor.nome}?`)) {
+    async confirmarExclusao(autor) {
+      const result = await this.$swal.fire({
+        title: 'Confirmar exclusão',
+        text: `Tem certeza que deseja excluir o autor: ${autor.nome}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sim, excluir!',
+        cancelButtonText: 'Cancelar'
+      })
+      
+      if (result.isConfirmed) {
         this.excluirAutor(autor)
       }
     },
@@ -259,12 +230,34 @@ export default {
     async excluirAutor(autor) {
       try {
         await api.autores.delete(autor.id)
-        alert('Autor excluído com sucesso!')
+        this.$swal.fire({
+          icon: 'success',
+          title: 'Sucesso!',
+          text: 'Autor excluído com sucesso!',
+          timer: 2000,
+          showConfirmButton: false
+        })
         await this.carregarAutores()
         
       } catch (error) {
         console.error('Erro ao excluir autor:', error)
-        alert('Erro ao excluir autor')
+        
+        let errorMessage = 'Não foi possível excluir o autor.'
+        
+        // Se há erros específicos
+        if (error.response?.data?.errors) {
+          const errors = error.response.data.errors
+          const errorList = Object.values(errors).flat()
+          errorMessage = errorList.join('<br>')
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message
+        }
+        
+        this.$swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          html: errorMessage
+        })
       }
     }
   }

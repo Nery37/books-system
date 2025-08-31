@@ -70,7 +70,11 @@ export default {
         
       } catch (error) {
         console.error('Erro ao carregar autor:', error)
-        alert('Erro ao carregar autor')
+        this.$swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          text: 'Não foi possível carregar os dados do autor.'
+        })
         this.$router.push('/autores')
       }
     },
@@ -79,19 +83,52 @@ export default {
       try {
         this.loading = true
         
+        // Converter o formato para o que o backend espera
+        const dados = {
+          Nome: this.form.nome
+        }
+        
         if (this.isEditing) {
-          await api.autores.update(this.$route.params.id, this.form)
-          alert('Autor atualizado com sucesso!')
+          await api.autores.update(this.$route.params.id, dados)
+          this.$swal.fire({
+            icon: 'success',
+            title: 'Sucesso!',
+            text: 'Autor atualizado com sucesso!',
+            timer: 2000,
+            showConfirmButton: false
+          })
         } else {
-          await api.autores.create(this.form)
-          alert('Autor criado com sucesso!')
+          await api.autores.create(dados)
+          this.$swal.fire({
+            icon: 'success',
+            title: 'Sucesso!',
+            text: 'Autor criado com sucesso!',
+            timer: 2000,
+            showConfirmButton: false
+          })
         }
         
         this.$router.push('/autores')
         
       } catch (error) {
         console.error('Erro ao salvar autor:', error)
-        alert('Erro ao salvar autor')
+        
+        let errorMessage = 'Não foi possível salvar o autor.'
+        
+        // Se há erros de validação específicos
+        if (error.response?.data?.errors) {
+          const errors = error.response.data.errors
+          const errorList = Object.values(errors).flat()
+          errorMessage = errorList.join('<br>')
+        } else if (error.response?.data?.message) {
+          errorMessage = error.response.data.message
+        }
+        
+        this.$swal.fire({
+          icon: 'error',
+          title: 'Erro!',
+          html: errorMessage
+        })
       } finally {
         this.loading = false
       }
