@@ -1,0 +1,72 @@
+services:
+  app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: livros_app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./backend:/var/www
+      - ./backend/docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - livros-network
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:alpine
+    container_name: livros_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./backend:/var/www
+      - ./backend/docker/nginx:/etc/nginx/conf.d
+    networks:
+      - livros-network
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.0
+    container_name: livros_mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: livros_db
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: livros123
+      MYSQL_USER: livros_user
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./backend/docker/mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - livros-network
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: livros_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+    networks:
+      - livros-network
+    depends_on:
+      - db
+
+volumes:
+  dbdata:
+    driver: local
+
+networks:
+  livros-network:
+    driver: bridge
