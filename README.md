@@ -18,6 +18,7 @@ Sistema completo para gerenciamento de livros, autores e assuntos com interface 
 
 ### Backend
 - **Laravel 10** - Framework PHP moderno
+- **Nginx** - Servidor web e proxy reverso
 - **MySQL 8.0** - Banco de dados relacional
 - **Prettus Repository** - Padrão Repository Pattern
 - **Laravel Fractal** - Transformação de dados para API
@@ -45,9 +46,9 @@ Sistema completo para gerenciamento de livros, autores e assuntos com interface 
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │   Backend       │    │   Database      │
 │   Vue.js 2      │◄──►│   Laravel 10    │◄──►│   MySQL 8.0     │
-│   Port: 8080    │    │   Port: 8000    │    │   Port: 3306    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
+│   Port: 3000    │    │   + Nginx       │    │   Port: 3306    │
+└─────────────────┘    │   Port: 8000    │    └─────────────────┘
+         │              └─────────────────┘             │
          └───────────────────────┼───────────────────────┘
                                  │
                     ┌─────────────────┐
@@ -55,6 +56,13 @@ Sistema completo para gerenciamento de livros, autores e assuntos com interface 
                     │   Port: 8080    │
                     └─────────────────┘
 ```
+
+### Componentes da Infraestrutura
+
+- **Frontend (Vue.js 2)**: Interface do usuário rodando na porta **3000**
+- **Backend (Laravel 10)**: API RESTful com Nginx como proxy reverso na porta **8000**
+- **Database (MySQL 8.0)**: Banco de dados na porta **3306**
+- **phpMyAdmin**: Interface de administração do banco na porta **8080**
 
 ### Estrutura do Backend (Laravel)
 ```
@@ -121,10 +129,10 @@ npm run serve
 
 ### 3. Acesse o Sistema
 - **🌐 API Backend**: http://localhost:8000
-- **💻 Frontend Vue**: http://localhost:8080
+- **💻 Frontend Vue**: http://localhost:3000
 - **🗄️ phpMyAdmin**: http://localhost:8080
-  - Usuário: `root`
-  - Senha: `root`
+  - Usuário: `livros_user`
+  - Senha: `livros123`
 
 ## 🚀 Comandos Disponíveis (Makefile)
 
@@ -629,7 +637,7 @@ make fresh
 ```bash
 # Verificar configuração de CORS no Laravel
 # Arquivo: backend/config/cors.php
-# Certificar que localhost:8080 está nas origens permitidas
+# Certificar que localhost:3000 está nas origens permitidas
 ```
 
 ### 🔧 Comandos de Diagnóstico
