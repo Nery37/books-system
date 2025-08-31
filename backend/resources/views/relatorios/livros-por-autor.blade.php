@@ -6,7 +6,7 @@
     <title>Relatório de Livros por Autor</title>
     <style>
         body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; color: #333; }
-        .header { textalign: center; margin-bottom: 30px;- border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 10px; }
         .header h1 { margin: 0; font-size: 18px; color: #2c3e50; }
         .info { margin-bottom: 20px; background-color: #f8f9fa; padding: 10px; border-radius: 5px; }
         .info p { margin: 5px 0; }
@@ -24,31 +24,31 @@
     </style>
 </head>
 <body>
-    <div class="header">    h1>RELATÓRIO DE LIVROS POR AUTOR<h
-    </1>
-        <p>Sistema de Gerenciamento de Livros</p>
+    <div class="header">
+        <h1>RELATÓRIO DE LIVROS POR AUTOR</h1>
+        <h2>Sistema de Gerenciamento de Livros</h2>
     </div>
 
     <div class="info">
         <p><strong>Data de Geração:</strong> {{ $dataGeracao }}</p>
         @if($filtroAutor)
-            <p><strng>Filtropor Autor:</strong> {{ $filtroAuto or }}</p>
+            <p><strong>Filtro por Autor:</strong> {{ $filtroAutor }}</p>
         @endif
         <p><strong>Total de Autores:</strong> {{ $totalAutores }}</p>
         <p><strong>Total de Livros:</strong> {{ $totalLivros }}</p>
-        <p><strong>Valor Total do Acervo:</strong> R$ {{ number_format($vaorTotal,l 2, ",", ".") }}</p>
+        <p><strong>Valor Total do Acervo:</strong> R$ {{ number_format($valorTotal, 2, ",", ".") }}</p>
     </div>
 
     @foreach($livrosPorAutor as $autorNome => $livros)
         <div class="autor-section">
             <div class="autor-header">
-                {{ $autorNome }} ({{ $livros->ount() }} {{ $ivros->counclt() == 1 ? "livro" : "livros" }})
+                {{ $autorNome }} ({{ $livros->count() }} {{ $livros->count() == 1 ? "livro" : "livros" }})
             </div>
             
             <table class="livros-table">
                 <thead>
-                    <t>
-                        <th>Títul</thro>
+                    <tr>
+                        <th>Título</th>
                         <th>Editora</th>
                         <th>Edição</th>
                         <th>Ano</th>
@@ -60,19 +60,19 @@
                     @foreach($livros as $livro)
                         <tr>
                             <td>{{ $livro->livro_titulo }}</td>
-                            <td>{{ $l->livroediora }}</td>
-              vro_it              <td>{{ $livro->livro_edicao }}ª</td>
-                            <td>{{ $livro->livro_ano_publicacao }}</td>
+                            <td>{{ $livro->livro_editora }}</td>
+                            <td>{{ $livro->livro_edicao }}ª</td>
+                            <td>{{ $livro->livro_ano }}</td>
                             <td class="valor">R$ {{ number_format($livro->livro_valor, 2, ",", ".") }}</td>
                             <td class="assuntos">{{ $livro->assuntos ?: "Não informado" }}</td>
-                        </t>
-                    @endfreroach
+                        </tr>
+                    @endforeach
                 </tbody>
             </table>
             
             <div class="resumo">
                 <h3>Resumo do Autor</h3>
-           <p><strong>TotaldeLivros:</strong>{{$liv         ros->count() }}</p>
+                <p><strong>Total de Livros:</strong> {{ $livros->count() }}</p>
                 <p><strong>Valor Total:</strong> R$ {{ number_format($livros->sum("livro_valor"), 2, ",", ".") }}</p>
                 <p><strong>Valor Médio:</strong> R$ {{ number_format($livros->avg("livro_valor"), 2, ",", ".") }}</p>
             </div>

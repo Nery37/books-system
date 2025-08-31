@@ -71,16 +71,19 @@ class RelatorioController extends Controller
     /**
      * Gera PDF do relatório de livros por autor
      */
-    public function livrosPorAutorPDF(Request $request): JsonResponse
+    public function livrosPorAutorPDF(Request $request)
     {
         try {
             $pdfContent = $this->relatorioService->gerarRelatorioPDF();
 
             $filename = 'relatorio-livros-por-autor-' . now()->format('Y-m-d-H-i-s') . '.pdf';
 
-            return response()->json($pdfContent, 200, [
+            return response($pdfContent, 200, [
                 'Content-Type' => 'application/pdf',
                 'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Pragma' => 'no-cache',
+                'Expires' => '0'
             ]);
         } catch (\Exception $e) {
             return response()->json([

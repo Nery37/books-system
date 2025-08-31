@@ -35,7 +35,7 @@ class LivroController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $filters = $request->only(['search', 'orderBy', 'sortedBy']);
+            $filters = $request->only(['search', 'titulo', 'autor_id', 'assunto_id', 'orderBy', 'sortedBy']);
             $include = $request->get('include', '');
             
             if ($include) {

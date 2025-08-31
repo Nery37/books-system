@@ -19,7 +19,16 @@ class RelatorioService
 
     public function gerarRelatorioPDF()
     {
-        $dados = $this->getRelatorioLivrosPorAutor();
+        $livrosPorAutor = $this->getRelatorioLivrosPorAutor();
+        
+        // Calcular estatísticas para o relatório
+        $totalAutores = $livrosPorAutor->count();
+        $totalLivros = $livrosPorAutor->flatten()->count();
+        $valorTotal = $livrosPorAutor->flatten()->sum('livro_valor');
+        $dataGeracao = now()->format('d/m/Y H:i:s');
+        
+        // Verificar se há filtro de autor específico
+        $filtroAutor = null; // Pode ser implementado posteriormente se necessário
         
         $options = new Options();
         $options->set('defaultFont', 'Arial');
@@ -27,7 +36,14 @@ class RelatorioService
         
         $dompdf = new Dompdf($options);
         
-        $html = view('relatorios.livros-por-autor', compact('dados'))->render();
+        $html = view('relatorios.livros-por-autor', compact(
+            'livrosPorAutor',
+            'totalAutores',
+            'totalLivros', 
+            'valorTotal',
+            'dataGeracao',
+            'filtroAutor'
+        ))->render();
         
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');

@@ -27,7 +27,10 @@ class AssuntoSeeder extends Seeder
         ];
 
         foreach ($assuntos as $assunto) {
-            Assunto::create($assunto);
+            Assunto::updateOrCreate(
+                ['codAs' => $assunto['codAs']], // Condição de busca
+                $assunto // Dados para criar/atualizar
+            );
         }
     }
 }

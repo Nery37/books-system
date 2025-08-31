@@ -13,7 +13,41 @@ class LivroService
 
     public function getAll(array $filters = [])
     {
-       return $this->livroRepository->with(['autores', 'assuntos'])->paginate();
+        $query = $this->livroRepository->with(['autores', 'assuntos']);
+        
+        // Filtro por título
+        if (isset($filters['titulo']) && !empty($filters['titulo'])) {
+            $query = $query->findByField('titulo', 'like', '%' . $filters['titulo'] . '%');
+        }
+        
+        // Filtro por autor
+        if (isset($filters['autor_id']) && !empty($filters['autor_id'])) {
+            $query = $query->whereHas('autores', function($q) use ($filters) {
+                $q->where('autores.id', $filters['autor_id']);
+            });
+        }
+        
+        // Filtro por assunto
+        if (isset($filters['assunto_id']) && !empty($filters['assunto_id'])) {
+            $query = $query->whereHas('assuntos', function($q) use ($filters) {
+                $q->where('assuntos.id', $filters['assunto_id']);
+            });
+        }
+        
+        // Busca geral
+        if (isset($filters['search']) && !empty($filters['search'])) {
+            $search = $filters['search'];
+            $query = $query->where(function($q) use ($search) {
+                $q->where('titulo', 'like', '%' . $search . '%')
+                  ->orWhere('editora', 'like', '%' . $search . '%');
+            });
+        }
+        
+        // Ordenação
+        $orderBy = $filters['orderBy'] ?? 'titulo';
+        $sortedBy = $filters['sortedBy'] ?? 'asc';
+        
+        return $query->orderBy($orderBy, $sortedBy)->paginate(15);
     }
 
     public function getById(int $id)

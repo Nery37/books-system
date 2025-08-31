@@ -27,7 +27,10 @@ class AutorSeeder extends Seeder
         ];
 
         foreach ($autores as $autor) {
-            Autor::create($autor);
+            Autor::updateOrCreate(
+                ['CodAu' => $autor['CodAu']], // Condição de busca
+                $autor // Dados para criar/atualizar
+            );
         }
     }
 }
